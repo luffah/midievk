@@ -6,12 +6,13 @@ Require xdotool, python3-tk
 import logging
 from math import floor, log10
 from midiev import (MidiKeyboard, MIDITYPE,
-                          CONTROLLER, NOTEON, NOTEOFF, CHANNEL)
+                    CONTROLLER, NOTEON, NOTEOFF, CHANNEL)
 from midievk import MidiToXdo
 from options import (OPTIONS, NB_CTL_STEPS_IDX, get_all_midi_devices, DEVICE,
-                     CONFIG_FILE, CONFIG_FORMAT, CONFIG_LOADER,TITLE,
+                     CONFIG_FILE, CONFIG_FORMAT, CONFIG_LOADER, TITLE,
                      NOTE_PRESSURE_MIDDLE_DELTA, NOTE_PRESSURE_STRONG_DELTA,
                      CTL_DECREASING)
+
 try:
     import Tkinter as tk
     import tkMessagebox as messagebox
@@ -24,13 +25,14 @@ except ImportError:  # Python 3
     import tkinter.ttk as ttk
 
 GUI_DESC_MODE = {
-    'Note-on':['keydown', 'key'],
-    'Note-on(middle)':['keydown', 'key'],
-    'Note-on(strong)':['keydown', 'key'],
-    'Note-off':['keyup', 'key'],
-    'CC+':['relative', 'absolute'],
-    'CC-':['relative', 'absolute']
-    }
+    'Note-on': ['keydown', 'key'],
+    'Note-on(middle)': ['keydown', 'key'],
+    'Note-on(strong)': ['keydown', 'key'],
+    'Note-off': ['keyup', 'key'],
+    'CC+': ['relative', 'absolute'],
+    'CC-': ['relative', 'absolute']
+}
+
 
 class TkWindow(tk.Frame):
     """TkWindow"""
@@ -96,8 +98,8 @@ class TkWindow(tk.Frame):
         vsb.pack(side='right', fill='y')
         self._tree.configure(yscrollcommand=vsb.set)
 
-        ttk.Label( frame1_2,
-            text="Device : ").pack(side='left', padx=5,pady=5)
+        ttk.Label(frame1_2,
+                  text="Device : ").pack(side='left', padx=5, pady=5)
         self._cbox_device = tk.StringVar()
         try:
             device_options = get_all_midi_devices()
@@ -105,30 +107,30 @@ class TkWindow(tk.Frame):
                 frame1_2,
                 textvariable=self._cbox_device,
                 values=device_options,
-                )
+            )
             cbox.pack(side='left', padx=5, pady=5)
             cbox.set(DEVICE or device_options.split()[0])
-            cbox.bind("<<ComboboxSelected>>",self.connect_to_device)
+            cbox.bind("<<ComboboxSelected>>", self.connect_to_device)
         except IndexError:
             messagebox.showwarning(
                 TITLE, "No midi device detected ! Leave...")
             exit()
 
         ttk.Checkbutton(frame1_2, text='Programming mode',
-            variable=self._programming_mode
-            ).pack(side='left', padx=5, pady=5)
+                        variable=self._programming_mode
+                        ).pack(side='left', padx=5, pady=5)
 
-        ttk.Button( frame1_2, text='Quit',
-            command=self.on_closing
-            ).pack(side='right', padx=5, pady=5)
+        ttk.Button(frame1_2, text='Quit',
+                   command=self.on_closing
+                   ).pack(side='right', padx=5, pady=5)
 
         ttk.Button(frame1_2, text='Save configs',
-            command=self.save_configs
-            ).pack(side='right', padx=5, pady=5)
+                   command=self.save_configs
+                   ).pack(side='right', padx=5, pady=5)
 
         self._programming_mode.set(0)
 
-    def connect_to_device(self,event):
+    def connect_to_device(self, event):
         """connect_to_device"""
         self.midikb = MidiKeyboard(self._cbox_device.get())
         self.midixdo.set_midi_device(self.midikb)
@@ -144,12 +146,13 @@ class TkWindow(tk.Frame):
                 file_format,
                 file_name,
                 config_line_process=self._gui_insert
-                )
+            )
             if not conf_exists:
                 self._programming_mode.set(1)
             else:
                 self.sort_treeview(column=1)
                 self.sort_treeview(column=0)
+                self.sort_treeview(column=1)
 
     def save_configs(self, file_format=CONFIG_FORMAT, file_name=CONFIG_FILE):
         """save_configs
@@ -206,7 +209,7 @@ class TkWindow(tk.Frame):
                 typ, key_note,
                 mod + val,
                 GUI_DESC_MODE[typ][keymode] if typ in GUI_DESC_MODE else ''
-                )
+            )
         )
 
     def _ins(self, midikey, values):
@@ -215,11 +218,11 @@ class TkWindow(tk.Frame):
         :param midikey:
         :param values:
         """
-        valuest = {'type':values[0],
-                   'channel':values[1],
+        valuest = {'type': values[0],
+                   'channel': values[1],
                    'keybind': None,
                    'mode': 0
-                  }
+                   }
 
         self._gui_insert(midikey, valuest)
         self.midixdo.insert(midikey, valuest)
@@ -230,15 +233,14 @@ class TkWindow(tk.Frame):
         :param midikey:
         :param values:
         """
-        valuest = {'type':values[0],
-                   'channel':values[1],
+        valuest = {'type': values[0],
+                   'channel': values[1],
                    'keybind': None,
                    'mode': 0
-                  }
+                   }
 
         self._gui_insert(midikey, valuest)
         self.midixdo.insert(midikey, valuest)
-
 
     def check_item(self, tree_item):
         """check_item
@@ -295,7 +297,7 @@ class TkWindow(tk.Frame):
 
             # for child in self._tree.get_children():
                 # if key == self._tree.item(child, option="values")[2]:
-                    # self._tree.set(child, 2, "<Undefined>")
+                # self._tree.set(child, 2, "<Undefined>")
 #
             # self._programming_mode_live=False
             self.set_current_key(modifier, key)
@@ -310,7 +312,7 @@ class TkWindow(tk.Frame):
         self.midixdo.set_keybind(
             int(self._tree.item(self._tree_selection, option="tag")[0]),
             modifier + key
-            )
+        )
 
     def _update_type(self, midikey, name):
         """set_current_key
@@ -338,23 +340,24 @@ class TkWindow(tk.Frame):
                 "(strong)"
                 if midikey >> 12 == NOTE_PRESSURE_STRONG_DELTA
                 else ""
-                )
+            )
         elif miditype == CONTROLLER:
             if OPTIONS[NB_CTL_STEPS_IDX] > 0:
-                ndigits = "%0" + str(int(floor(log10(OPTIONS[NB_CTL_STEPS_IDX]) + 1))) + "d"
-                name = "CC" + ndigits % (midikey >> 12) + '/' + str(OPTIONS[NB_CTL_STEPS_IDX])
+                ndigits = "%0" + \
+                    str(int(floor(log10(OPTIONS[NB_CTL_STEPS_IDX]) + 1))) + "d"
+                name = "CC" + ndigits % (midikey >> 12) + \
+                    '/' + str(OPTIONS[NB_CTL_STEPS_IDX])
             else:
-                name = "CC" + ('-' if midikey>>12 == CTL_DECREASING else '+')
+                name = "CC" + ('-' if midikey >> 12 == CTL_DECREASING else '+')
 
-        if not self.midixdo.has_key(midikey):
+        if midikey not in self.midixdo:
             channel = command[CHANNEL]
             self._ins(midikey, (name, channel))
         else:
             self._update_type(midikey, name)
 
-        self.sort_treeview(column=1)
         self.sort_treeview(column=0)
-
+        self.sort_treeview(column=1)
 
     def check_midi_device(self):
         """check_midi_device"""
@@ -362,11 +365,11 @@ class TkWindow(tk.Frame):
             if self.midikb.is_running():
                 self.after(1, self.check_midi_device)
             else:
-                print "Midi device is currently not monitored"
+                print("Midi device is currently not monitored")
                 self.after(1000, self.check_midi_device)
                 return
         else:
-            print "Midi device disappeared"
+            print("Midi device disappeared")
             exit()
         (command, key) = self.midixdo.parse_midi()
         if key is not None:
@@ -379,6 +382,10 @@ class TkWindow(tk.Frame):
                 self._tree.yview('moveto', movement)
                 self._tree.selection_set(key)
             else:
+                try:
+                    self._tree.selection_set(key)
+                except:
+                    pass
                 self.midixdo.send_keystroke(command, key)
             logging.debug('Key: %s %s', key, command)
 

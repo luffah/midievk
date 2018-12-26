@@ -5,9 +5,9 @@ python3, xdotool, python3-tk
 Thu Mar 15 2018 (luffah)
     Add options -h.
     Separate :
-    - execution (no gui) : midixdo.py
-    - configuration (gui) : midixdoconf.py
-    - diagnostic : midiobserver.py
+    - execution (no gui) : midievk.py
+    - configuration (gui) : gmidievk.py
+    - diagnostic : midiev.py
 
 Wed Feb 14 2018 (luffah)
     Cover the case of midi devices which doesn't send NoteOff
@@ -17,7 +17,7 @@ User manual
 ==============
 # First run and short explanations
 1. Connect the USB MIDI keyboard
-2. Run the program `./midixdoconf.py`
+2. Run the program `./gmidievk.py`
 3. To assign a MIDI key to a (normal) keyboard shortcut, select the programming mode in the interface
     * Press a MIDI key
     * Press on a normal keyboard the desired shortcut
@@ -32,11 +32,11 @@ User manual
 7. Save the new layout by pressing "Save configs" button. Now, you have a file `config.json`.
 
 # Use as a deamon
-Once `config.json` is created, it is possible to run `./midixdo.py`.
+Once `config.json` is created, it is possible to run `./midievk.py` in a script.
 
 You can use different config files at the same time :
-`./midixdo.py configa.json &`
-`./midixdo.py configb.json &`
+`./midievk.py configa.json &`
+`./midievk.py configb.json &`
 
 # Advanced options
 ## Using 3 level of velocity with notes
@@ -46,7 +46,7 @@ You can use 3 shorcuts for one note, by applying differents velocities (soft, mi
 
 It is recommended to observe values for your midi controller before setting this option.
 You can do that applying this procedure to get the values delimiting middle :
-1. In a terminal, run `./midiobserver --stats`
+1. In a terminal, run `./midiev --stats`
 2. Hit a midikeyboard key at least 10 times, with a subjective middle velocity.
 3. Press `q` and `Enter` keys, to finish the program.
 4. Look at the min / mean / max values for 'Note-on' values.
@@ -54,11 +54,12 @@ You can do that applying this procedure to get the values delimiting middle :
 
 Assuming, we found that a middle pressure never goes under 40,
 and a strong hit never goes under 80.
-In a terminal, run `./midixdoconf.py --note-pressures 40 80` as described in first run part.
+In a terminal, run `./gmidievk.py --note-pressures 40 80` as described in first run part.
 
 ## Using n level with controllers
 Assuming, we want to have 10 key assigned to one pot.
-In a terminal, run `./midixdoconf.py --ctl-steps 10` as described in first run part.
+In a terminal, run `./gmidievk.py --ctl-steps 10` as described in first run part.
+
 #FIXME
 
 # Note

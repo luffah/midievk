@@ -33,7 +33,13 @@ from options import CTL_DECREASING, CTL_INCREASING, NB_CTL_STEPS_IDX
 from options import CTL_VALUE_MIDDLE_MIN_IDX, CTL_VALUE_MIDDLE_MAX_IDX
 from interval import setInterval
 
+try:
+    input = raw_input
+except NameError:
+    pass
+
 ABS_DELTA = NOTEOFF
+
 
 def split_ctl_value(ctlval):
     """split_ctl_value : return
@@ -42,16 +48,20 @@ def split_ctl_value(ctlval):
     """
     return int(round(ctlval * (OPTIONS[NB_CTL_STEPS_IDX]-1) / 127)) + 1
 
+
 class MidiToXdo(object):
 
     """MidiToXdo"""
 
     def __init__(self):
         self.midikb = None
-        # self._midi_key_chord = {} # table containing active keys
-        self._midi_key_values = {} # table containing recents values
-        self._midi_ctl_values = {} # table containing recents values for controllers
-        self._midi_values = {} # table containing config
+        # self._midi_key_chord = {}   # active keys
+        self._midi_key_values = {}  # recents values
+        self._midi_ctl_values = {}  # recents values for controllers
+        self._midi_values = {}      # table containing config
+
+    def __iter__(self):
+        return iter(self._midi_values)
 
     def set_midi_device(self, midikb):
         """set_midi_device
@@ -67,13 +77,6 @@ class MidiToXdo(object):
         :param values:
         """
         self._midi_values[key] = values
-
-    def has_key(self, key):
-        """has_key
-
-        :param key:
-        """
-        return key in self._midi_values
 
     def set_keybind(self, key, keybind):
         """set_keybind
@@ -123,7 +126,7 @@ class MidiToXdo(object):
                      file_format=CONFIG_FORMAT,
                      file_name=CONFIG_FILE,
                      config_line_process=None
-                    ):
+                     ):
         """read_configs
 
         :param file_format:
@@ -139,20 +142,22 @@ class MidiToXdo(object):
                         for hexkey in options['keytable']:
                             values = options['keytable'][hexkey]
                             key = int(hexkey, 16)
-                            if not 'type' in values or not 'channel' in values:
+                            if not ('type' in values and 'channel' in values):
                                 continue
-                            if not 'keybind' in values:
+                            if ('keybind' not in values or values['keybind'] == '<Undefined>'):
                                 values['keybind'] = None
-                            if not 'mode' in values:
+                                continue
+                            if 'mode' not in values:
                                 values['mode'] = 0
                             self.insert(key, values)
                             if config_line_process:
-                                config_line_process(key, self._midi_values[key])
+                                config_line_process(
+                                    key, self._midi_values[key])
             except BufferError:
-                print "error while parsing %s" % file_name
-            print "using config %s" % file_name
+                print("error while parsing %s" % file_name)
+            print("using config %s" % file_name)
         else:
-            print "%s not found" % file_name
+            print("%s not found" % file_name)
         return len(self._midi_values) > 0
 
     def save_configs(self, file_format=CONFIG_FORMAT, file_name=CONFIG_FILE):
@@ -164,8 +169,9 @@ class MidiToXdo(object):
         if file_format in CONFIG_LOADER:
             options = get_options()
             keytable = {}
-            for (hexkey, values) in self._midi_values.iteritems():
-                keytable[hex(hexkey)] = values
+            for hexkey in [k for k in  self._midi_values
+                           if self._midi_values[k].get('keybind') ]:
+                keytable[hex(hexkey)] = self._midi_values[hexkey]
             options['keytable'] = keytable
             with open(file_name, "w") as config:
                 CONFIG_LOADER[file_format].dump(
@@ -187,7 +193,9 @@ class MidiToXdo(object):
             midikey[MIDITYPE] - (ABS_DELTA if self.get_key_mode(key) else 0)
         )
 
-        if keytype in [(NOTEOFF - ABS_DELTA), (NOTEON - ABS_DELTA), CONTROLLER]:
+        if keytype in ((NOTEOFF - ABS_DELTA),
+                       (NOTEON - ABS_DELTA),
+                       CONTROLLER):
             keyevt = "key"
 
         elif keytype == NOTEOFF:
@@ -222,9 +230,13 @@ class MidiToXdo(object):
                 # keydown for a decreasing key).
                 if channel in self._midi_ctl_values:
                     if (
-                            midikey[VELOCITY] >= OPTIONS[CTL_VALUE_MIDDLE_MIN_IDX] and
-                            midikey[VELOCITY] <= OPTIONS[CTL_VALUE_MIDDLE_MAX_IDX]
-                        ):
+                            midikey[
+                                VELOCITY] >= OPTIONS[
+                                    CTL_VALUE_MIDDLE_MIN_IDX] and
+                            midikey[
+                                VELOCITY] <= OPTIONS[
+                                    CTL_VALUE_MIDDLE_MAX_IDX]
+                    ):
                         # Neutral - > release a previous key
                         key = self._midi_ctl_values.pop(channel, None)
                         keyevt = "keyup"
@@ -232,15 +244,14 @@ class MidiToXdo(object):
                     keyevt = "keydown"
                     if midikey[VELOCITY] < OPTIONS[CTL_VALUE_MIDDLE_MIN_IDX]:
                         # Negative -> continuously press key for decrease
-                        key = (key % (1<< 12))| CTL_DECREASING << 12
+                        key = (key % (1 << 12)) | CTL_DECREASING << 12
                         self._midi_ctl_values[channel] = key
                     elif midikey[VELOCITY] > OPTIONS[CTL_VALUE_MIDDLE_MAX_IDX]:
                         # Positive - > continuously press key for increase
-                        key = (key % (1<< 12))| CTL_INCREASING << 12
+                        key = (key % (1 << 12)) | CTL_INCREASING << 12
                         self._midi_ctl_values[channel] = key
                     else:
                         return
-
 
         # print(keyevt, key)
         if keyevt:
@@ -298,16 +309,16 @@ class MidiToXdo(object):
                 hexcode = nhexcode
         return (command, hexcode)
 
-    @setInterval(.0001)
+    @setInterval
     def loop_midi_device(self):
         """loop_midi_device"""
         command = None
         if self.midikb:
             if not self.midikb.is_running():
-                print DEVICE + " is not running"
+                print(DEVICE + " is not running")
                 return
         else:
-            print "Midi device disappeared"
+            print("Midi device disappeared")
             exit()
         (command, hexcode) = self.parse_midi()
         if hexcode is not None:
@@ -321,7 +332,6 @@ class MidiToXdo(object):
         logging.debug('Thanks for using this app :)')
 
 
-
 def main():
     """main"""
     midixdo = MidiToXdo()
@@ -329,8 +339,9 @@ def main():
         midilistener = MidiKeyboard(DEVICE)
         midixdo.set_midi_device(midilistener)
         midixdo.loop_midi_device()
-        while raw_input() is not 'q':
+        while input() is not 'q':
             pass
+
 
 if __name__ == '__main__':
     if DEVICE and CONFIG_FILE:

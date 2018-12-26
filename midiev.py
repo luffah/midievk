@@ -18,7 +18,7 @@ midievk midi listener
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-# Requiere xdotool, python3-tk
+# Require xdotool, python3-tk
 import threading
 import logging
 import sys
@@ -26,6 +26,10 @@ import queue
 from interval import setInterval
 from options import usage, DEVICE, STATS
 
+try:
+    input = raw_input
+except NameError:
+    pass
 
 # event types
 NOTEOFF = 0x80
@@ -43,8 +47,8 @@ INSTRUMENT = 1
 CHANNEL = 1
 VELOCITY = 2
 CONTROLLER_VALUE = 2
-LSB = 1 #7bits
-MSB = 2 #7bits
+LSB = 1  # 7bits
+MSB = 2  # 7bits
 
 
 class MidiKeyboard(object):
@@ -52,24 +56,24 @@ class MidiKeyboard(object):
     miditable = {
         # cmd  parameters
         # ----+--------------
-        NOTEOFF:2,#TYPE, CHANNEL, VELOCITY,
-        NOTEON:2,#TYPE, CHANNEL, VELOCITY,
-        AFTERTOUCH:2,#TYPE, CHANNEL, VALUE,
-        CONTROLLER:2,#TYPE, CHANNEL, VALUE,
-        PATCHCHANGE:1,#TYPE, INSTRUMENT,
-        PRESSURE:1,#TYPE, VALUE,
-        PITCHBEND:2,#TYPE, LSB, MSB
+        NOTEOFF: 2,  # TYPE, CHANNEL, VELOCITY,
+        NOTEON: 2,  # TYPE, CHANNEL, VELOCITY,
+        AFTERTOUCH: 2,  # TYPE, CHANNEL, VALUE,
+        CONTROLLER: 2,  # TYPE, CHANNEL, VALUE,
+        PATCHCHANGE: 1,  # TYPE, INSTRUMENT,
+        PRESSURE: 1,  # TYPE, VALUE,
+        PITCHBEND: 2,  # TYPE, LSB, MSB
     }
     event_desc = {
         # cmd  parameters
         # ----+--------------
-        NOTEOFF:'Note-off',
-        NOTEON:'Note-on',
-        AFTERTOUCH:'Aftertouch',
-        CONTROLLER:'Controller',
-        PATCHCHANGE:'Path change',
-        PRESSURE:'Pressure',
-        PITCHBEND:'Pitch bend'
+        NOTEOFF: 'Note-off',
+        NOTEON: 'Note-on',
+        AFTERTOUCH: 'Aftertouch',
+        CONTROLLER: 'Controller',
+        PATCHCHANGE: 'Path change',
+        PRESSURE: 'Pressure',
+        PITCHBEND: 'Pitch bend'
     }
 
     def __init__(self, device=None):
@@ -78,7 +82,7 @@ class MidiKeyboard(object):
         self._running = threading.Event()
         self._queue = queue.Queue()
         if device is not None:
-            print 'listen %s' % device
+            print('listen %s' % device)
             self.set_device(device)
             self.start_thread()
 
@@ -105,8 +109,8 @@ class MidiKeyboard(object):
         logging.info('Stop midi-thread request')
         try:
             if self._running.is_set():
-                # self._device_pipe.kill()
-                # self._device_pipe.stdout.close()
+                self._device_pipe.kill()
+                self._device_pipe.stdout.close()
                 self._running.clear()
                 logging.debug('I set running flag off.')
                 self._thread.join(1)
@@ -114,7 +118,7 @@ class MidiKeyboard(object):
                 self._device_pipe.close()
                 logging.debug('Midi-thread is closed.')
         except:
-                logging.debug('Some thread had been engraved alive.')
+            logging.debug('Some thread had been engraved alive.')
 
     def _read_data_with_values(self, data, message):
         midiinput = self._device_pipe
@@ -130,7 +134,6 @@ class MidiKeyboard(object):
                 self._queue.put(message)
             else:
                 expected_len = 0
-
 
     def _read_device(self):
         """_read_device """
@@ -162,7 +165,6 @@ class MidiKeyboard(object):
         except IOError:
             logging.error("Device not found: %s ", self._device)
 
-
     def read(self):
         """read"""
         try:
@@ -190,7 +192,8 @@ class MidiKeyboard(object):
 
     # def send_midi(self, midi):
         # a, b, c = midi.split(" ")
-        # subprocess.call("echo -ne '\\x"+a+"\\x"+b+"\\x"+c+"' > /dev/midi", shell=True)
+        # subprocess.call("echo -ne '\\x"+a+"\\x"+b+"\\x"+c+"' > /dev/midi",
+        #               shell=True)
         # with open(device, 'ab') as
         # self._device_pipe = subprocess.Popen(
         # cat    ['cat', device],
@@ -210,20 +213,22 @@ class MidiView(object):
         """
         self.midikb = MidiKeyboard(dev)
 
-    @setInterval(.0001)
+    @setInterval
     def check_midi_device(self):
         """check_midi_device"""
         if self.midikb:
             if self.midikb.is_running():
                 command = self.midikb.read()
                 if command:
-                    print 'Event:  %s' % command
+                    print('Event:  %s' % command)
         else:
-            print "Midi device disappeared"
+            print("Midi device disappeared")
             exit()
 
 
 STATISTICS = {}
+
+
 def reg_stat(message):
     """reg_stat
 
@@ -237,31 +242,32 @@ def reg_stat(message):
         else:
             STATISTICS[data][channel] = [message[2]]
     else:
-        STATISTICS[data] = {channel:[message[2]]}
+        STATISTICS[data] = {channel: [message[2]]}
 
 
 def show_stats():
     """show_stats"""
     template = "{0:<14s} {1:<8s} {2:<8s} {3:<8s} {4:<8s}"
-    print template.format("Type", "Channel", "Value", "", "")
-    print template.format("", "", "(min)", "(mean)", "(max)")
-    print template.format("----", "-------", "-----", "-----", "-----")
+    print(template.format("Type", "Channel", "Value", "", ""))
+    print(template.format("", "", "(min)", "(mean)", "(max)"))
+    print(template.format("----", "-------", "-----", "-----", "-----"))
     for (keytype, channel_values) in STATISTICS.items():
         for (channel, values) in channel_values.items():
-            print template.format(
+            print(template.format(
                 MidiKeyboard.event_desc[keytype],
                 str(channel),
                 str(min(values)),
                 str(sum(values)/len(values)),
                 str(max(values))
-                )
+            ))
+
 
 def main():
     """main"""
     midiobserver = MidiView()
     midiobserver.connect_to_device(DEVICE)
     midiobserver.check_midi_device()
-    while raw_input() is not 'q':
+    while input() is not 'q':
         pass
     if STATS:
         show_stats()
