@@ -36,15 +36,16 @@ GUI_DESC_MODE = {
 
 class TkWindow(tk.Frame):
     """TkWindow"""
+    _tree_selection = None
+    _tree_sort_order = [(0,False), (1,False)]
+    midikb = None
 
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
-        self.midikb = None
         self.midixdo = MidiToXdo()
         self._programming_mode = tk.IntVar()
         # self._programming_mode_live = False
-        self._tree_selection = None
         self.init_gui()
         self.read_configs()
         if len(self._cbox_device.get()):
@@ -55,16 +56,16 @@ class TkWindow(tk.Frame):
         self.parent.title(TITLE)
         self.pack(fill="both", expand=True)
 
-        frame1 = ttk.Frame(self)
-        frame1.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-        frame1_1 = ttk.Frame(frame1)
-        frame1_1.pack(side="bottom", fill="both", expand=True)
-        frame1_2 = ttk.Frame(frame1)
-        frame1_2.pack(side="top", fill="both", expand=False)
+        frame_main = ttk.Frame(self)
+        frame_main.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        frame_treeview = ttk.Frame(frame_main)
+        frame_treeview.pack(side="bottom", fill="both", expand=True)
+        frame_menu = ttk.Frame(frame_main)
+        frame_menu.pack(side="top", fill="both", expand=False)
 
-        frame2 = ttk.Frame(self)
-        frame2.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-
+        frame_scrollbar = ttk.Frame(self)
+        frame_scrollbar.pack(side="right", fill="y",
+                             expand=False, padx=5, pady=5)
         tree_headers = [
             ('Type', 90),
             ('Channel', 10),
@@ -72,7 +73,7 @@ class TkWindow(tk.Frame):
             ('Mode', 5)
         ]
         self._tree = ttk.Treeview(
-            frame1_1,
+            frame_treeview,
             columns=[name for name, _ in tree_headers],
             show="headings",
             height=20
@@ -92,19 +93,19 @@ class TkWindow(tk.Frame):
                 anchor='w')
 
         vsb = ttk.Scrollbar(
-            frame2,
+            frame_scrollbar,
             orient="vertical",
             command=self._tree.yview)
         vsb.pack(side='right', fill='y')
         self._tree.configure(yscrollcommand=vsb.set)
 
-        ttk.Label(frame1_2,
+        ttk.Label(frame_menu,
                   text="Device : ").pack(side='left', padx=5, pady=5)
         self._cbox_device = tk.StringVar()
         try:
             device_options = get_all_midi_devices()
             cbox = ttk.Combobox(
-                frame1_2,
+                frame_menu,
                 textvariable=self._cbox_device,
                 values=device_options,
             )
@@ -116,15 +117,15 @@ class TkWindow(tk.Frame):
                 TITLE, "No midi device detected ! Leave...")
             exit()
 
-        ttk.Checkbutton(frame1_2, text='Programming mode',
+        ttk.Checkbutton(frame_menu, text='Programming mode',
                         variable=self._programming_mode
                         ).pack(side='left', padx=5, pady=5)
 
-        ttk.Button(frame1_2, text='Quit',
+        ttk.Button(frame_menu, text='Quit',
                    command=self.on_closing
                    ).pack(side='right', padx=5, pady=5)
 
-        ttk.Button(frame1_2, text='Save configs',
+        ttk.Button(frame_menu, text='Save configs',
                    command=self.save_configs
                    ).pack(side='right', padx=5, pady=5)
 
@@ -150,9 +151,7 @@ class TkWindow(tk.Frame):
             if not conf_exists:
                 self._programming_mode.set(1)
             else:
-                self.sort_treeview(column=1)
-                self.sort_treeview(column=0)
-                self.sort_treeview(column=1)
+                self.sort_treeview()
 
     def save_configs(self, file_format=CONFIG_FORMAT, file_name=CONFIG_FILE):
         """save_configs
@@ -162,7 +161,11 @@ class TkWindow(tk.Frame):
         """
         self.midixdo.save_configs(file_format, file_name)
 
-    def sort_treeview(self, column=0, reverse=False):
+    def sort_treeview(self):
+        for i, r in self._tree_sort_order:
+            self.sort_treeview_column(i, reverse=r)
+
+    def sort_treeview_column(self, column, reverse=False):
         """sort_treeview
 
         :param column:
@@ -356,8 +359,7 @@ class TkWindow(tk.Frame):
         else:
             self._update_type(midikey, name)
 
-        self.sort_treeview(column=0)
-        self.sort_treeview(column=1)
+        self.sort_treeview()
 
     def check_midi_device(self):
         """check_midi_device"""
